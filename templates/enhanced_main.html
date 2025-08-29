@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ config.title }} - {{ report_date.strftime('%B %d, %Y') }}</title>
+    <link rel="stylesheet" href="enhanced_styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+Pro:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-top">
+            <div class="date-time">{{ report_date.strftime('%A, %B %d, %Y') }}</div>
+            <div class="header-controls">
+                <button id="api-status" class="api-status" onclick="checkAPIStatus()">
+                    <i class="fas fa-circle"></i> API Status
+                </button>
+                <button id="theme-toggle" class="theme-toggle" onclick="toggleDarkMode()">🌙</button>
+            </div>
+        </div>
+        <div class="masthead">
+            <h1 class="title">{{ config.title }}</h1>
+            <div class="subtitle">{{ config.subtitle }}</div>
+        </div>
+        <nav class="navigation">
+            <a href="#intelligence" class="nav-link active">Intelligence</a>
+            <a href="#projects" class="nav-link">Projects</a>
+            <a href="#installations" class="nav-link">Installations</a>
+            <a href="#system-health" class="nav-link">System Health</a>
+        </nav>
+        <div class="summary-bar">
+            <span class="update-count">{{ total_updates }} New Updates Today</span>
+            <span class="categories-count">{{ categories|length }} Categories</span>
+            <span class="projects-count" id="projects-count">Loading Projects...</span>
+            <span class="generated-time">Generated at {{ generated_at.strftime('%I:%M %p') }}</span>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- Section 1: Daily Intelligence (existing) -->
+        <section id="intelligence" class="content-section active">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="fas fa-newspaper"></i> Daily Intelligence
+                </h2>
+                <div class="section-stats">
+                    <span class="stat-item">{{ total_updates }} updates</span>
+                    <span class="stat-item">{{ categories|length }} categories</span>
+                </div>
+            </div>
+
+            {% if categories %}
+                <div class="top-stories">
+                    <h3 class="subsection-title">Today's Headlines</h3>
+                    <div class="headlines-grid">
+                        {% for category_key, updates in categories.items() %}
+                            {% if updates and category_key != 'other' %}
+                                {% for update in updates[:2] %}
+                                    <article class="headline-card priority-{{ update.importance_score|int }}">
+                                        <div class="category-tag">{{ category_info[category_key].title }}</div>
+                                        <h4 class="headline-title">
+                                            <a href="{{ update.url }}" target="_blank" rel="noopener">{{ update.title }}</a>
+                                        </h4>
+                                        <div class="headline-meta">
+                                            <span class="source">{{ update.source|upper }}</span>
+                                            <span class="time">{{ update.published_date.strftime('%I:%M %p') }}</span>
+                                            {% if update.importance_score >= 8 %}
+                                                <span class="breaking">BREAKING</span>
+                                            {% endif %}
+                                        </div>
+                                        {% if update.content %}
+                                            <p class="headline-summary">{{ update.content[:200] }}...</p>
+                                        {% endif %}
+                                    </article>
+                                {% endfor %}
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {% for category_key, updates in categories.items() %}
+                    {% if updates and category_key != 'other' %}
+                        <div class="category-section">
+                            <div class="section-header">
+                                <h3 class="section-title">{{ category_info[category_key].title }}</h3>
+                                <span class="section-count">{{ updates|length }} updates</span>
+                            </div>
+                            
+                            <div class="articles-grid">
+                                {% for update in updates %}
+                                    <article class="article-card priority-{{ update.importance_score|int }}">
+                                        <div class="article-header">
+                                            <h4 class="article-title">
+                                                <a href="{{ update.url }}" target="_blank" rel="noopener">
+                                                    {{ update.title }}
+                                                </a>
+                                            </h4>
+                                            <div class="article-meta">
+                                                <span class="source">{{ update.source|upper }}</span>
+                                                <span class="time">{{ update.published_date.strftime('%m/%d %I:%M%p') }}</span>
+                                                <span class="score">Score: {{ update.importance_score|round(1) }}</span>
+                                            </div>
+                                        </div>
+                                        
+                                        {% if update.content %}
+                                            <div class="article-content">
+                                                <p>{{ update.content[:300] }}{% if update.content|length > 300 %}...{% endif %}</p>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        {% if update.metadata %}
+                                            <div class="article-tags">
+                                                {% set metadata = update.metadata|from_json %}
+                                                {% if metadata.version %}
+                                                    <span class="tag">v{{ metadata.version }}</span>
+                                                {% endif %}
+                                                {% if metadata.repo %}
+                                                    <span class="tag">{{ metadata.repo }}</span>
+                                                {% endif %}
+                                                {% if metadata.type %}
+                                                    <span class="tag">{{ metadata.type }}</span>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    </article>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <div class="no-updates">
+                    <h3>No New Updates Today</h3>
+                    <p>No significant updates were found in the monitored sources. Check back tomorrow!</p>
+                </div>
+            {% endif %}
+        </section>
+
+        <!-- Section 2: Local Project Status Dashboard -->
+        <section id="projects" class="content-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="fas fa-code"></i> Local Projects Dashboard
+                </h2>
+                <div class="section-controls">
+                    <button onclick="refreshProjects()" class="refresh-btn">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                    <button onclick="scanDeeper()" class="scan-btn">
+                        <i class="fas fa-search-plus"></i> Deep Scan
+                    </button>
+                </div>
+            </div>
+
+            <div id="projects-loading" class="loading-indicator">
+                <i class="fas fa-spinner fa-spin"></i> Scanning local projects...
+            </div>
+
+            <div id="projects-summary" class="projects-summary" style="display: none;">
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <div class="card-icon"><i class="fas fa-folder-open"></i></div>
+                        <div class="card-content">
+                            <div class="card-number" id="total-projects">0</div>
+                            <div class="card-label">Total Projects</div>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="card-icon health"><i class="fas fa-heart"></i></div>
+                        <div class="card-content">
+                            <div class="card-number" id="avg-health">0</div>
+                            <div class="card-label">Avg Health Score</div>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="card-icon attention"><i class="fas fa-exclamation-triangle"></i></div>
+                        <div class="card-content">
+                            <div class="card-number" id="needs-attention">0</div>
+                            <div class="card-label">Need Attention</div>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="card-icon git"><i class="fab fa-git-alt"></i></div>
+                        <div class="card-content">
+                            <div class="card-number" id="git-repos">0</div>
+                            <div class="card-label">Git Repositories</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="projects-list" class="projects-list" style="display: none;">
+                <!-- Projects will be loaded here dynamically -->
+            </div>
+
+            <div id="projects-error" class="error-message" style="display: none;">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>Error loading projects. Please try again.</span>
+            </div>
+        </section>
+
+        <!-- Section 3: Interactive Installation Checklist -->
+        <section id="installations" class="content-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="fas fa-download"></i> Installation Center
+                </h2>
+                <div class="section-controls">
+                    <button onclick="refreshInstallableItems()" class="refresh-btn">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                    <button onclick="viewInstallationHistory()" class="history-btn">
+                        <i class="fas fa-history"></i> History
+                    </button>
+                </div>
+            </div>
+
+            <div class="installation-tabs">
+                <button class="tab-btn active" onclick="showInstallationTab('available')">
+                    <i class="fas fa-package"></i> Available (0)
+                </button>
+                <button class="tab-btn" onclick="showInstallationTab('queue')">
+                    <i class="fas fa-clock"></i> Queue (0)
+                </button>
+                <button class="tab-btn" onclick="showInstallationTab('completed')">
+                    <i class="fas fa-check-circle"></i> Completed (0)
+                </button>
+            </div>
+
+            <!-- Available Items Tab -->
+            <div id="available-tab" class="tab-content active">
+                <div class="installation-controls">
+                    <div class="selection-controls">
+                        <button onclick="selectAll()" class="select-btn">
+                            <i class="fas fa-check-double"></i> Select All
+                        </button>
+                        <button onclick="selectNone()" class="select-btn">
+                            <i class="fas fa-times"></i> Clear All
+                        </button>
+                        <button onclick="selectByCategory()" class="select-btn">
+                            <i class="fas fa-filter"></i> By Category
+                        </button>
+                    </div>
+                    <div class="install-controls">
+                        <span id="selected-count" class="selected-count">0 selected</span>
+                        <button id="install-selected-btn" onclick="installSelected()" class="install-btn" disabled>
+                            <i class="fas fa-download"></i> Install Selected
+                        </button>
+                    </div>
+                </div>
+
+                <div id="installable-items-loading" class="loading-indicator">
+                    <i class="fas fa-spinner fa-spin"></i> Loading installable items...
+                </div>
+
+                <div id="installable-categories" class="installable-categories" style="display: none;">
+                    <!-- Categories will be loaded here dynamically -->
+                </div>
+
+                <div id="installable-items-error" class="error-message" style="display: none;">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>Error loading installable items. Please try again.</span>
+                </div>
+            </div>
+
+            <!-- Queue Tab -->
+            <div id="queue-tab" class="tab-content">
+                <div id="installation-queue" class="installation-queue">
+                    <div class="empty-state">
+                        <i class="fas fa-clock"></i>
+                        <h3>No installations in queue</h3>
+                        <p>Select items from the Available tab to start installing.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Completed Tab -->
+            <div id="completed-tab" class="tab-content">
+                <div id="installation-completed" class="installation-completed">
+                    <div class="empty-state">
+                        <i class="fas fa-check-circle"></i>
+                        <h3>No completed installations</h3>
+                        <p>Completed installations will appear here.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: System Health & Recommendations -->
+        <section id="system-health" class="content-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="fas fa-heartbeat"></i> System Health & Recommendations
+                </h2>
+                <div class="section-controls">
+                    <button onclick="refreshSystemHealth()" class="refresh-btn">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div id="system-health-loading" class="loading-indicator">
+                <i class="fas fa-spinner fa-spin"></i> Checking system health...
+            </div>
+
+            <div id="system-health-content" class="system-health-content" style="display: none;">
+                <div class="health-overview">
+                    <div class="health-indicator">
+                        <div class="health-status" id="overall-health-status">
+                            <i class="fas fa-circle"></i> <span>Good</span>
+                        </div>
+                        <div class="health-uptime">
+                            Uptime: <span id="system-uptime">24h</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="health-metrics">
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <i class="fas fa-database"></i>
+                            <span>Data Collection</span>
+                        </div>
+                        <div class="metric-value" id="recent-updates">0</div>
+                        <div class="metric-label">Updates (24h)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span>Performance</span>
+                        </div>
+                        <div class="metric-value" id="cache-hit-rate">0%</div>
+                        <div class="metric-label">Cache Hit Rate</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <i class="fas fa-download"></i>
+                            <span>Installations</span>
+                        </div>
+                        <div class="metric-value" id="install-success-rate">0%</div>
+                        <div class="metric-label">Success Rate</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <i class="fas fa-hdd"></i>
+                            <span>Storage</span>
+                        </div>
+                        <div class="metric-value" id="disk-usage">0 MB</div>
+                        <div class="metric-label">Disk Usage</div>
+                    </div>
+                </div>
+
+                <div class="system-recommendations">
+                    <h3 class="recommendations-title">
+                        <i class="fas fa-lightbulb"></i> System Recommendations
+                    </h3>
+                    <div id="system-recommendations-list" class="recommendations-list">
+                        <!-- Recommendations will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <div id="system-health-error" class="error-message" style="display: none;">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>Error loading system health. Please try again.</span>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>AI Intelligence Briefing System</h4>
+                <p>&copy; {{ report_date.year }} Enhanced with Project Management & Installation Center</p>
+            </div>
+            <div class="footer-section">
+                <h4>System Status</h4>
+                <p>Generated at {{ generated_at.strftime('%I:%M %p') }}</p>
+                <p>Next update tomorrow at 5:00 AM</p>
+            </div>
+            <div class="footer-section">
+                <h4>API Endpoints</h4>
+                <p>Local API: <code>http://127.0.0.1:5000/api/</code></p>
+                <p>WebSocket support for real-time updates</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="enhanced_script.js"></script>
+    <script>
+        // Dark mode toggle
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('dark-mode', isDark);
+            document.getElementById('theme-toggle').textContent = isDark ? '☀️' : '🌙';
+        }
+        
+        // Load saved theme
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('dark-mode');
+            if (savedTheme === 'true') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('theme-toggle').textContent = '☀️';
+            }
+            
+            // Initialize all sections
+            initializeDashboard();
+        });
+
+        // Navigation
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active from all nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionId).classList.add('active');
+            document.querySelector(`a[href="#${sectionId}"]`).classList.add('active');
+        }
+
+        // Add click handlers to navigation links
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const sectionId = this.getAttribute('href').substring(1);
+                showSection(sectionId);
+            });
+        });
+
+        // Initialize dashboard
+        function initializeDashboard() {
+            // Load all sections
+            loadProjects();
+            loadInstallableItems();
+            loadSystemHealth();
+            checkAPIStatus();
+            
+            // Start periodic updates
+            setInterval(checkAPIStatus, 30000); // Check API status every 30 seconds
+            setInterval(refreshInstallationProgress, 5000); // Refresh installation progress every 5 seconds
+        }
+    </script>
+</body>
+</html>

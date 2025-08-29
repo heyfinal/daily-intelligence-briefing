@@ -1,0 +1,42 @@
+# Enhanced AI Intelligence Briefing System Dependencies
+
+# Core dependencies
+aiohttp==3.9.1
+asyncio-throttle==1.0.2
+feedparser==6.0.10
+Jinja2==3.1.2
+MarkupSafe==2.1.3
+requests==2.31.0
+python-dateutil==2.8.2
+pytz==2023.3
+charset-normalizer==3.3.2
+idna==3.4
+multidict==6.0.4
+yarl==1.9.4
+aiosignal==1.3.1
+frozenlist==1.4.0
+attrs==23.1.0
+
+# Enhanced features dependencies
+flask>=2.3.3
+flask-cors>=4.0.0
+python-crontab>=3.0.0
+gitpython>=3.1.40
+psutil>=5.9.6
+click>=8.1.7
+rich>=13.6.0
+pydantic>=2.4.2
+praw>=7.7.1
+beautifulsoup4>=4.12.2
+schedule>=1.2.0
+
+# Development and testing
+pytest>=7.4.3
+pytest-asyncio>=0.21.1
+black>=23.9.1
+flake8>=6.1.0
+
+# Additional utilities
+pathlib2>=2.3.7
+configparser>=6.0.0
+sqlite3-utils>=3.35.0
