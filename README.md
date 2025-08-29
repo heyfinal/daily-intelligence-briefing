@@ -5,6 +5,7 @@ A comprehensive daily intelligence briefing system that monitors AI development 
 ## 🌟 Features
 
 - **📰 Professional Daily Reports**: Newspaper-style HTML briefings ready by 5 AM
+- **🌙 Dark/Light Theme Toggle**: Persistent theme switching with localStorage
 - **🔍 Comprehensive Monitoring**: Tracks Claude Code, Codex, Gemini, CLI tools, and MCP servers
 - **📊 Local Project Analysis**: Scans and analyzes your local development projects
 - **✅ Interactive Installation**: Checkbox-style inventory with one-click bulk installation
@@ -224,6 +225,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### v1.0.0 - One-Click Installation Release
 - ✨ **One-Click Curl Installer**: Complete system setup with single command
+- 🌙 **Dark/Light Theme Toggle**: Professional theme switching with persistent settings
 - 🎨 **Professional Installation Experience**: Colored output, progress tracking, error handling
 - 🔄 **Smart Backup System**: Automatically backs up existing installations
 - 🌐 **Demo Report Generation**: Instant first report with browser opening
