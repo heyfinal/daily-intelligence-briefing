@@ -12,7 +12,23 @@ A comprehensive daily intelligence briefing system that monitors AI development 
 - **⚡ Efficient API Usage**: Smart caching and differential updates
 - **🔒 Security First**: Validated installations with comprehensive logging
 
-## 🚀 Quick Start
+## 🚀 One-Click Installation
+
+Install the complete system with a single command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/heyfinal/daily-intelligence-briefing/main/install.sh | bash
+```
+
+This will automatically:
+- ✅ Check system requirements (macOS, Python 3.9+, Git, curl)
+- ✅ Install Homebrew if needed
+- ✅ Clone the repository to `~/daily-intelligence-briefing`
+- ✅ Set up the complete system with all dependencies
+- ✅ Generate your first demo report
+- ✅ Open the report in your browser
+
+## 🔧 Manual Installation
 
 ```bash
 # Clone the repository
